@@ -120,12 +120,28 @@ async function run() {
             const result = await volunteersCollection.find(query).toArray();
             res.send(result)
         })
+
         // delete a Volunteer data from database
         app.delete('/volunteer/:id', async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) };
             const result = await volunteersCollection.deleteOne(query);
             res.send(result);
+        })
+
+        // update a Volunteer Data to database
+        app.put('/volunteer/:id', verifyToken, async (req, res) => {
+            const id = req.params.id
+            const volunteerData = req.body
+            const query = { _id: new ObjectId(id) }
+            const options = { upsert: true }
+            const updateDoc = {
+                $set: {
+                    ...volunteerData,
+                },
+            }
+            const result = await volunteersCollection.updateOne(query, updateDoc, options)
+            res.send(result)
         })
 
 
