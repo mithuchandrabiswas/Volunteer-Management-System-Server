@@ -57,7 +57,7 @@ async function run() {
     try {
         // Create database and collection
         const volunteersCollection = client.db("volunteersDB").collection("volunteers");
-        const bidsPostCollection = client.db("volunteersDB").collection("bidsPost");
+        const bidsVolunteerPostCollection = client.db("volunteersDB").collection("bidsVolunteerPost");
 
         // Token related API==========> 
         app.post('/jwt', async (req, res) => {
@@ -102,7 +102,7 @@ async function run() {
         app.get('/volunteer/:id', async (req, res) => {
             const id = req.params.id
             const query = { _id: new ObjectId(id) }
-            const result = await jobsCollection.findOne(query)
+            const result = await volunteersCollection.findOne(query)
             res.send(result)
         })
 
@@ -117,8 +117,15 @@ async function run() {
                 res.status(403).send({ message: 'forbidded access' });
             }
             const query = { 'buyer.email': email };
-            const result = await jobsCollection.find(query).toArray();
+            const result = await volunteersCollection.find(query).toArray();
             res.send(result)
+        })
+        // delete a Volunteer data from database
+        app.delete('/volunteer/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await volunteersCollection.deleteOne(query);
+            res.send(result);
         })
 
 
