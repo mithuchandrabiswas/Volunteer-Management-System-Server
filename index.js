@@ -22,6 +22,28 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(cookieParser());
 
+//Created Middleware
+const verifyToken = (req, res, next) => {
+    const token = req.cookies?.token;
+    // console.log(token);
+    if (!token) {
+        return res.status(401).send({ message: 'unathorized access' });
+    }
+    if (token) {
+        jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, docoded) => {
+            if (err) {
+                console.log(err);
+                return res.status(401).send({ message: 'unathorized access' });
+            }
+            console.log(docoded);
+            req.user = docoded
+            next();
+        })
+    }
+
+}
+
+
 
 
 
