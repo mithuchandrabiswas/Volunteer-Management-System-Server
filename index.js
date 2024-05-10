@@ -82,6 +82,47 @@ async function run() {
             }).send({ success: true });
         })
 
+        // ========> Volunteers Adde Related API Code <==========
+        // Save a Volunteer data into MongoDB Database
+        app.post('/volunteer', async (req, res) => {
+            const jobData = req.body
+
+            const result = await volunteersCollection.insertOne(jobData)
+            res.send(result)
+        })
+
+        // Get all Volunteers data from MongoDB Database
+        app.get('/volunteers', async (req, res) => {
+            const result = await volunteersCollection.find().toArray()
+            // console.log(result);
+            res.send(result)
+        })
+
+        // Get a single job data from db using job id
+        app.get('/volunteer/:id', async (req, res) => {
+            const id = req.params.id
+            const query = { _id: new ObjectId(id) }
+            const result = await jobsCollection.findOne(query)
+            res.send(result)
+        })
+
+        // get all jobs posted by a specific user
+        app.get('/volunteers/:email', verifyToken, async (req, res) => {
+            // const tokenData = req.user;
+            const tokenDataEmail = req.user.email;
+            console.log(tokenDataEmail, 'comming from own middleware');
+            const email = req.params.email;
+            console.log(email, 'comming from database');
+            if (tokenDataEmail !== email) {
+                res.status(403).send({ message: 'forbidded access' });
+            }
+            const query = { 'buyer.email': email };
+            const result = await jobsCollection.find(query).toArray();
+            res.send(result)
+        })
+
+
+
 
         // Send a ping to confirm a successful connection
         // await client.db('admin').command({ ping: 1 })
