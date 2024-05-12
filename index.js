@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+require("dotenv").config();
 const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
 const app = express();
@@ -7,7 +8,6 @@ const port = process.env.PORT || 5000;
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 // Config
-require("dotenv").config();
 const corsOptions = {
     origin: [
         'http://localhost:5173',
@@ -17,11 +17,12 @@ const corsOptions = {
     credentials: true,
     optionSuccessStatus: 200,
 }
-// Middleware 
+// ==========> Middleware <=========
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use(cookieParser());
-//Created Middleware
+
+//Create Custom Middleware
 const verifyToken = (req, res, next) => {
     const token = req.cookies?.token;
     // console.log(token);
@@ -39,9 +40,7 @@ const verifyToken = (req, res, next) => {
             next();
         })
     }
-
 }
-
 
 const uri = `mongodb+srv://${process.env.MONGODB_USER}:${process.env.MONGODB_PASSWORD}@cluster0.2bu9h7l.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";`;
 
@@ -57,12 +56,12 @@ async function run() {
     try {
         // Create database and collection
         const volunteersCollection = client.db("volunteersDB").collection("volunteers");
-        const bidsVolunteerPostCollection = client.db("volunteersDB").collection("bidsVolunteerPost");
+        const requestVolunteersPostCollection = client.db("volunteersDB").collection("requestVolunteersPost");
 
-        // Token related API==========> 
+        //========> Token related API <==========
         app.post('/jwt', async (req, res) => {
             const user = req.body;
-            console.log('dynamic token of', user);
+            // console.log('dynamic token of', user);
             const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '7d' });
             // res.send(token); // SEND TOKEN FRONT IN BY AXIOS ER DATA ER VITORE
             res.cookie('token', token, {
@@ -71,8 +70,7 @@ async function run() {
                 sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict'
             }).send({ success: true });
         })
-
-        // ==> Token clear after user logOut
+        // Token clear after user logOut
         app.get('/logout', async (req, res) => {
             res.clearCookie('token', {
                 httpOnly: true,
@@ -82,12 +80,11 @@ async function run() {
             }).send({ success: true });
         })
 
-        // ========> Volunteers Adde Related API Code <==========
+        // ========> Volunteers Added Related API Code <==========
         // Save a Volunteer data into MongoDB Database
         app.post('/volunteer', async (req, res) => {
-            const jobData = req.body
-
-            const result = await volunteersCollection.insertOne(jobData)
+            const volunteerData = req.body
+            const result = await volunteersCollection.insertOne(volunteerData)
             res.send(result)
         })
 
@@ -98,7 +95,7 @@ async function run() {
             res.send(result)
         })
 
-        // Get a single job data from db using job id
+        // Get a single volunteer data from database using volunteer id
         app.get('/volunteer/:id', async (req, res) => {
             const id = req.params.id
             const query = { _id: new ObjectId(id) }
@@ -106,18 +103,20 @@ async function run() {
             res.send(result)
         })
 
-        // get all jobs posted by a specific user
-        app.get('/volunteers/:email', verifyToken, async (req, res) => {
-            // const tokenData = req.user;
-            const tokenDataEmail = req.user.email;
-            console.log(tokenDataEmail, 'comming from own middleware');
+        // get all volunteers data by a specific user
+        app.get('/volunteers/:email',verifyToken, async (req, res) => {
+            const tokenEmail = req.user.email;
             const email = req.params.email;
-            console.log(email, 'comming from database');
-            if (tokenDataEmail !== email) {
-                res.status(403).send({ message: 'forbidded access' });
+            console.log(tokenEmail,email);
+            if (tokenEmail !== email) {
+                return res.status(403).send({ message: 'forbidden access' })
             }
-            const query = { 'buyer.email': email };
-            const result = await volunteersCollection.find(query).toArray();
+            let query = {};
+            if (req.query?.email) {
+                query = { organizer_email: req.query.email }
+            }
+
+            const result = await volunteersCollection.find(query).toArray()
             res.send(result)
         })
 
@@ -141,9 +140,25 @@ async function run() {
                 },
             }
             const result = await volunteersCollection.updateOne(query, updateDoc, options)
+            console.log(result);
             res.send(result)
         })
 
+
+        // Volunteer Post Request related API Code
+        // Save a Volunteer data into MongoDB Database
+        app.post('/request-volunteer-post', async (req, res) => {
+            const volunteerData = req.body
+            const result = await requestVolunteersPostCollection.insertOne(volunteerData)
+            res.send(result)
+        })
+
+        // Get all Request volunteer post data from MongoDB Database
+        app.get('/request-volunteer-post-allData', async (req, res) => {
+            const result = await requestVolunteersPostCollection.find().toArray()
+            // console.log(result);
+            res.send(result)
+        })
 
 
 
