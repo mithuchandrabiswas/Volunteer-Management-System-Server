@@ -104,17 +104,17 @@ async function run() {
         })
 
         // get all volunteers data by a specific user
-        app.get('/volunteers/:email',verifyToken, async (req, res) => {
-            const tokenEmail = req.user.email;
+        app.get('/volunteers/:email', async (req, res) => {
+            // const tokenEmail = req.user.email;
             const email = req.params.email;
-            console.log(tokenEmail,email);
-            if (tokenEmail !== email) {
-                return res.status(403).send({ message: 'forbidden access' })
-            }
-            let query = {};
-            if (req.query?.email) {
-                query = { organizer_email: req.query.email }
-            }
+            // console.log('token Email:',tokenEmail, 'user email:',email);
+            // if (tokenEmail !== email) {
+            //     return res.status(403).send({ message: 'forbidden access' })
+            // }
+            const query = { organizer_email: email }
+            // if (req.query?.email) {
+            //     query = { organizer_email: req.query.email }
+            // }
 
             const result = await volunteersCollection.find(query).toArray()
             res.send(result)
@@ -149,8 +149,9 @@ async function run() {
         // Save a Volunteer data into MongoDB Database
         app.post('/request-volunteer-post', async (req, res) => {
             const volunteerData = req.body
+            console.log(volunteerData); // for server console
             const result = await requestVolunteersPostCollection.insertOne(volunteerData)
-            res.send(result)
+            res.send(result) // for send or save database
         })
 
         // Get all Request volunteer post data from MongoDB Database
@@ -159,6 +160,31 @@ async function run() {
             // console.log(result);
             res.send(result)
         })
+
+        // Get a single request volunteer post data from database using volunteer id
+        app.get('/request-volunteer-post-sData/:id', async (req, res) => {
+            const id = req.params.id
+            const query = { _id: new ObjectId(id) }
+            const result = await requestVolunteersPostCollection.findOne(query)
+            res.send(result)
+        })
+
+        // Get all request volunteer post data from database using volunteer email
+        app.get('/request-volunteer-post-allData/:email', async (req, res) => {
+            const email = req.params.email;
+            // console.log(email);
+            const query = { volunteer_email: email };
+            const result = await requestVolunteersPostCollection.find(query).toArray();
+            res.send(result);
+        })
+        // delete a Volunteer request data from database
+        app.delete('request-volunteer-post-sData/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await requestVolunteersPostCollection.deleteOne(query);
+            res.send(result);
+        })
+
 
 
 
