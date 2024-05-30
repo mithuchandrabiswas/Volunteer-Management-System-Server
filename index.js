@@ -88,27 +88,40 @@ async function run() {
             res.send(result)
         })
 
-        // // Get all Volunteers data from MongoDB Database
-        // app.get('/volunteers', async (req, res) => {
-        //     // const query = {deadline: -1}
-        //     const result = await volunteersCollection.find().sort({ deadline: -1 }).toArray()
-        //     // console.log(result);
-        //     res.send(result)
-        // })
-
         app.get('/volunteers', async (req, res) => {
-            const searchQuery = req.query.search;
-            let query = {};
+            try {
+                const searchQuery = req.query.search;
+                const filterQuery = req.query.filter;
+                const sortQuery = req.query.sort;
 
-            if (searchQuery) {
-                // If there's a search query, construct a MongoDB query to search based on it
-                query = {
-                    post_title: { $regex: searchQuery, $options: 'i' } // Case-insensitive search for 'post_title' field
-                };
+                // Initialize the query object
+                let query = {};
+
+                // Add filter condition
+                if (filterQuery) {
+                    query.category = filterQuery;
+                }
+
+                // Add search condition
+                if (searchQuery) {
+                    query.post_title = { $regex: searchQuery, $options: 'i' };
+                }
+
+                // Initialize sorting options
+                let sortOptions = {};
+                if (sortQuery) {
+                    sortOptions.deadline = sortQuery === 'asc' ? 1 : -1;
+                }
+
+                // Fetch results from the collection with combined query and sort options
+                const result = await volunteersCollection.find(query).sort(sortOptions).toArray();
+
+                // Send the result as the response
+                res.send(result);
+            } catch (error) {
+                // Handle errors and send a response with status code 500
+                res.status(500).send({ error: 'An error occurred while fetching volunteers data' });
             }
-
-            const result = await volunteersCollection.find(query).sort({ deadline: -1 }).toArray();
-            res.send(result);
         });
 
 
@@ -182,8 +195,8 @@ async function run() {
                 $inc: { total_volunteer_need: -1 }
             }
             const updateTotalVolunteerNeed = await volunteersCollection.updateOne(volunteerQuery, updateDoc);
-            console.log(updateTotalVolunteerNeed);
-            res.send(result); 
+            // console.log(updateTotalVolunteerNeed);
+            res.send(result);
         });
 
         // Get all request volunteer post data from database using volunteer email
